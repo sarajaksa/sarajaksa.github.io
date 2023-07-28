@@ -1,0 +1,27 @@
+name: Scrape latest data
+
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron:  '53 18 * * *'
+
+jobs:
+  scheduled:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out this repo
+      uses: actions/checkout@v3
+    - name: install granary
+      run pip install git+https://github.com/sarajaksa/granary-ao3.git
+    - name: Fetch latest data
+      run: |-
+        curl https://www.gov.si/drzavni-organi/ministrstva/ministrstvo-za-javno-upravo/o-ministrstvu/sluzba-za-upravne-enote/podatki-o-cakalnih-dobah-na-upravnih-enotah/ | grep -o  "/drzavni-organi/.*\.csv" | awk '{print "https://www.gov.si"$1}'  | xargs curl > uprava-cakanje-$(date -Iminutes).csv
+    - name: Commit and push if it changed
+      run: |-
+        git config user.name "Sara's Bot"
+        git config user.email "sarajaksa@sarajaksa.eu"
+        git add -A
+        timestamp=$(date -Iminutes)
+        git commit -m "Update the RSS feeds: ${timestamp}" || exit 0
+        git push
